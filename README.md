@@ -16,3 +16,7 @@ watch -n 1 'curl http://localhost:8686/metrics'
 ```bash
 docker-compose up --build && docker-compose down
 ```
+
+В графане добавляем источник данных Prometheus и указываем адрес http://prometheus:9090
+Импортируем дэшборд DB Queries с графиками по метрикам с запросами среднего времени ответа по методам репозитория и
+общего времени работы и количества запросов
