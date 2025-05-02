@@ -1,0 +1,43 @@
+[api]
+enabled = true
+address = "0.0.0.0:8080"
+playground = true
+
+[sources.docker_logs]
+type = "docker_logs"
+docker_host = "unix:///var/run/docker.sock"
+exclude_containers = ["vector"]
+
+[transforms.filter_container]
+type = "filter"
+inputs = ["docker_logs"]
+condition = '.container_name == "logger"'
+
+[transforms.parse_logs]
+type = "remap"
+inputs = ["filter_container"]
+source = '''
+  parsed = parse_json!(.message)
+  .timestamp = parse_timestamp!(parsed.timestamp, format: "%Y-%m-%dT%H:%M:%S")
+  .elapsed = to_float!(parsed.Elapsed)
+  .metric_name = parsed.MetricName
+'''
+
+[transforms.to_metrics]
+type = "log_to_metric"
+inputs = ["parse_logs"]
+
+[[transforms.to_metrics.metrics]]
+type = "histogram"
+field = "elapsed"
+tags.name = "{{ metric_name }}"
+
+[sinks.prometheus]
+type = "prometheus_exporter"
+inputs = ["to_metrics"]
+address = "0.0.0.0:8686"
+
+[sinks.debug]
+type = "console"
+inputs = ["parse_logs"]
+encoding.codec = "json"
