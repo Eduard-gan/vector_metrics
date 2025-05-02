@@ -2,16 +2,18 @@ version: '3.8'
 
 services:
   logger:
+    container_name: logger
     build: 
       context: .
       dockerfile: Dockerfile
-    container_name: logger
+    ports:
+      - "8000:8000"
     depends_on:
       - vector
 
   vector:
-    image: timberio/vector:nightly-debian
     container_name: vector
+    image: timberio/vector:nightly-debian
     command: ["-c", "/etc/vector/vector.toml"]
     ports:
       - "8686:8686"  # Порт для Prometheus
@@ -24,6 +26,7 @@ services:
       - VECTOR_SELF_NODE_NAME=vector
 
   prometheus:
+    container_name: prometheus
     image: prom/prometheus:latest
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -33,6 +36,7 @@ services:
       - vector
 
   grafana:
+    container_name: grafana
     image: grafana/grafana:latest
     environment:
       - GF_SECURITY_ADMIN_USER=admin

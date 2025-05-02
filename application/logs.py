@@ -1,10 +1,12 @@
+import inspect
 import logging
 import sys
 from collections import OrderedDict
-from random import randint, random, choice
-import structlog
-from time import sleep, time
 from enum import Enum
+from time import time
+from typing import Optional
+
+import structlog
 
 
 class Field(Enum):
@@ -37,7 +39,6 @@ class Field(Enum):
     def __call__(self, value) -> dict:
         return {self.value: value}
 
-
 def ordering_processor(_logger, _name, event_dict) -> dict:
     """Ordering processor for structlog."""
 
@@ -68,44 +69,30 @@ structlog.configure(
 )
 
 
-logger = structlog.get_logger()
+def get_class_and_method_name(func) -> str:
+    method_name = func.__name__
+    class_name = None
 
-def log_metrics(metric_name):
-    def inner(func):
-        def wrapper(*args, **kwargs):
-            start_time = time()
-            result = func(*args, **kwargs)
-            elapsed = round(time() - start_time, 3)
+    if inspect.getfullargspec(func).args and inspect.getfullargspec(func).args[0] in ['self', 'cls']:
+        class_name = func.__qualname__.split('.')[0]
 
-            logger.info(
-                **Field.MetricName(metric_name),
-                **Field.Elapsed(elapsed)
-            )
-            return result
-        return wrapper
-    return inner
+    if class_name:
+        return f"{class_name}.{method_name}"
+    else:
+        return method_name
 
 
-class UserRepository:
+def log_repo_metrics(func):
+    async def wrapper(*args, **kwargs):
+        metric_name = get_class_and_method_name(func)
 
-    @staticmethod
-    def _random_sleep():
-        seconds = randint(0, 5) + random()
-        sleep(seconds)
+        start_time = time()
+        result = await func(*args, **kwargs)
+        elapsed = round(time() - start_time, 3)
 
-    @classmethod
-    @log_metrics("UserRepository.get_by_id")
-    def get_by_id(cls):
-        cls._random_sleep()
-
-    @classmethod
-    @log_metrics("UserRepository.get_all")
-    def get_all(cls):
-        cls._random_sleep()
-
-
-while True:
-    method_names = [x for x in dir(UserRepository) if not x.startswith('_')]
-    random_method_name = choice(method_names)
-    random_repo_method = getattr(UserRepository, random_method_name)
-    random_repo_method()
+        structlog.get_logger().info(
+            **Field.MetricName(metric_name),
+            **Field.Elapsed(elapsed)
+        )
+        return result
+    return wrapper
