@@ -1,10 +1,9 @@
-import inspect
 import logging
 import sys
 from collections import OrderedDict
 from enum import Enum
+from functools import wraps
 from time import time
-from typing import Optional
 
 import structlog
 
@@ -69,30 +68,34 @@ structlog.configure(
 )
 
 
-def get_class_and_method_name(func) -> str:
-    method_name = func.__name__
-    class_name = None
+def get_caller_name(fn, args) -> str:
+    """
+    Возвращает имя функции или метода, который вызвал декорируемую функцию в dot-нотации.
+    """
 
-    if inspect.getfullargspec(func).args and inspect.getfullargspec(func).args[0] in ['self', 'cls']:
-        class_name = func.__qualname__.split('.')[0]
-
-    if class_name:
-        return f"{class_name}.{method_name}"
+    func_or_method = fn.__name__
+    if args and hasattr(args[0], '__class__') and not isinstance(args[0], type):
+        calling_class = args[0].__class__.__name__
+    elif args and isinstance(args[0], type):
+        calling_class = args[0].__name__
     else:
-        return method_name
+        calling_class = None
+
+    return f"{calling_class}.{func_or_method}" if calling_class else func_or_method
 
 
-def log_repo_metrics(func):
+def log_repo_metrics(fn):
+    """
+    Декоратор может использоваться для методов, класс-методов и обычных функций, только в их асинхронном варианте.
+    Статик-методы не поддерживаются и будут выглядеть, как обычные отдельно стоящие функции.
+    """
+
+    @wraps(fn)
     async def wrapper(*args, **kwargs):
-        metric_name = get_class_and_method_name(func)
-
         start_time = time()
-        result = await func(*args, **kwargs)
+        result = await fn(*args, **kwargs)
         elapsed = round(time() - start_time, 3)
 
-        structlog.get_logger().info(
-            **Field.MetricName(metric_name),
-            **Field.Elapsed(elapsed)
-        )
+        structlog.get_logger().info(**Field.MetricName(get_caller_name(fn, args)), **Field.Elapsed(elapsed))
         return result
     return wrapper

@@ -23,17 +23,17 @@ async def process_load(load: EndpointLoad) -> None:
 
 @app.post("/users")
 async def users_endpoint(load: EndpointLoad) -> None:
-    return await process_load(load)
+    await process_load(load)
 
 
 @app.post("/schedules")
 async def schedules_endpoint(load: EndpointLoad) -> None:
-    return await process_load(load)
+    await process_load(load)
 
 
 @app.post("/receptions")
 async def receptions_endpoint(load: EndpointLoad) -> None:
-    return await process_load(load)
+    await process_load(load)
 
 
 @app.post("/set_load")
