@@ -5,7 +5,7 @@ import importlib
 class RepositoryLoad(BaseModel):
     repo_method: str = Field(examples=["UsersRepository.get_by_id"])
     count: int = Field(ge=1, default=1, examples=[1, 5, 10])
-    latency: int = Field(ge=0, default=0, examples=[0, 1, 5])
+    latency: float = Field(ge=0, default=1, examples=[0.1, 1, 5])
 
     @property
     def method(self):
@@ -37,7 +37,7 @@ class LoaderConfig(BaseModel):
                         {
                             "repo_method": "UsersRepository.get_by_id",
                             "count": 1,
-                            "latency": 0
+                            "latency": 1
                         }
                     ]
                 }
@@ -60,7 +60,7 @@ class LoaderConfigs(BaseModel):
                                 {
                                     "repo_method": "UsersRepository.get_by_id",
                                     "count": 1,
-                                    "latency": 0
+                                    "latency": 1
                                 }
                             ]
                         }
