@@ -20,7 +20,7 @@ class EndpointLoad(BaseModel):
 
 class LoaderConfig(BaseModel):
     endpoint: str = Field(examples=["users"])
-    rps: float = Field(gt=0, examples=[0.1, 1, 5])
+    rps: float = Field(ge=0, examples=[0.1, 1, 5])
     load: EndpointLoad
 
     @property
@@ -41,5 +41,43 @@ class LoaderConfig(BaseModel):
                         }
                     ]
                 }
+            }
+        }
+
+
+class LoaderConfigs(BaseModel):
+    configs: list[LoaderConfig]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "configs": [
+                    {
+                        "endpoint": "users",
+                        "rps": 10,
+                        "load": {
+                            "repos": [
+                                {
+                                    "repo_method": "UsersRepository.get_by_id",
+                                    "count": 1,
+                                    "latency": 0
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "endpoint": "schedules",
+                        "rps": 1,
+                        "load": {
+                            "repos": [
+                                {
+                                    "repo_method": "SchedulesRepository.get_all",
+                                    "count": 5,
+                                    "latency": 10
+                                }
+                            ]
+                        }
+                    }
+                ]
             }
         }

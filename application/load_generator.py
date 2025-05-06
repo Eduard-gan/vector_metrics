@@ -1,5 +1,5 @@
-import asyncio
-from time import time
+from asyncio import Task, create_task, sleep
+
 
 import httpx
 
@@ -7,7 +7,7 @@ from schemas import LoaderConfig, EndpointLoad
 
 
 class LoadGenerator:
-    tasks: dict[str, asyncio.Task]
+    tasks: dict[str, Task]
     configs: dict[str, LoaderConfig]
 
     def __init__(self) -> None:
@@ -31,7 +31,7 @@ class LoadGenerator:
         self.configs[config.endpoint] = config
         if config.endpoint in self.tasks:
             self.tasks[config.endpoint].cancel()
-        self.tasks[config.endpoint] = asyncio.create_task(self.load(config))
+        self.tasks[config.endpoint] = create_task(self.load(config))
         print(f"SET LOAD FOR {config.url} TO {config.rps} RPS WITH PROFILE {config.load.model_dump()}")
 
     async def load(self, config: LoaderConfig) -> None:
@@ -40,9 +40,7 @@ class LoadGenerator:
 
         targeted_time_between_requests = 1 / config.rps
 
-        last_request_time = time()
         while True:
-            time_between_requests = time() - last_request_time
-            if time_between_requests >= targeted_time_between_requests:
-                await asyncio.create_task(self.api_request(url=config.url, load=config.load))
-                last_request_time = time()
+            print(f"LOAD: {config.endpoint}")
+            create_task(self.api_request(url=config.url, load=config.load))
+            await sleep(targeted_time_between_requests)
