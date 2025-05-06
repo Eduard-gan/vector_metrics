@@ -72,7 +72,7 @@ class LoaderConfigs(BaseModel):
                             "repos": [
                                 {
                                     "repo_method": "SchedulesRepository.get_all",
-                                    "count": 5,
+                                    "count": 1,
                                     "latency": 10
                                 }
                             ]
